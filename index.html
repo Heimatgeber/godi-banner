@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nächster Gottesdienst</title>
+  <style>
+    body {
+      font-family: Poppins, sans-serif;
+      background-color: transparent;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="godi-banner"></div>
+
+  <script>
+    fetch("https://heimatgeber.church.tools/?q=churchcal/ical&security=KI0C8hhoU8uGS1lofgipvw9kW1RbWEqI&id=2")
+      .then(response => response.text())
+      .then(data => {
+        const event = parseICal(data)[0];
+        if (!event) return;
+        const bannerHTML = `
+          <div style="background-color: #f3f3f3; padding: 20px; border-left: 5px solid #4CAF50; font-family: Poppins, sans-serif;">
+            <h3 style="margin: 0 0 10px;">🙌 Nächster Gottesdienst</h3>
+            <p style="margin: 5px 0;"><strong>🗓 ${formatDate(event.start)}</strong> · 🕥 ${formatTime(event.start)}</p>
+            <p style="margin: 5px 0;">📍 ${event.location || 'Ort folgt'}</p>
+            <p style="margin: 5px 0;">🎯 Thema: <em>${event.summary || 'Wird bekanntgegeben'}</em></p>
+          </div>`;
+        document.getElementById("godi-banner").innerHTML = bannerHTML;
+      });
+
+    function parseICal(ics) {
+      const events = [];
+      const matches = ics.match(/BEGIN:VEVENT([\s\S]*?)END:VEVENT/g) || [];
+      for (const match of matches) {
+        const get = (field) => {
+          const r = match.match(new RegExp(field + ':(.+)'));
+          return r ? r[1].trim() : '';
+        };
+        const dt = get('DTSTART');
+        if (new Date(dt) > new Date()) {
+          events.push({
+            summary: get('SUMMARY'),
+            location: get('LOCATION'),
+            start: dt
+          });
+        }
+      }
+      return events.sort((a, b) => new Date(a.start) - new Date(b.start));
+    }
+
+    function formatDate(dt) {
+      const d = new Date(dt);
+      return d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    function formatTime(dt) {
+      const d = new Date(dt);
+      return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    }
+  </script>
+</body>
+</html>
